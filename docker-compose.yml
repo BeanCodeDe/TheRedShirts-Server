@@ -10,8 +10,11 @@ services:
     depends_on:
       lobby:
         condition: service_started
+      message:
+        condition: service_started
     links:
       - lobby:lobby
+      - message:message
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -44,3 +47,16 @@ services:
         condition: service_healthy
     links:
       - postgres:postgres
+  message:
+    image: "beancodede/theredshirts-message:latest"
+    container_name: theredshirts-message
+    restart: always
+    environment: 
+      - POSTGRES_PASSWORD=myDatabasePassword
+      - LOG_LEVEL=debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres:postgres
+
