@@ -1,0 +1,47 @@
+version: '3.7'
+services:
+  proxy:
+    image: "beancodede/theredshirts-proxy:latest"
+    build: ./nginx-data
+    ports:
+    - "80:80"
+    environment:
+    - NGINX_HOST=foobar.com
+    - NGINX_PORT=80
+    depends_on:
+      lobby:
+        condition: service_started
+    links:
+      - lobby:lobby
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment: 
+      - POSTGRES_PASSWORD=myDatabasePassword
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5 
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: root@root.de
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+  lobby:
+    image: "beancodede/theredshirts-lobby:latest"
+    container_name: theredshirts-lobby
+    restart: always
+    environment: 
+      - POSTGRES_PASSWORD=myDatabasePassword
+      - LOG_LEVEL=debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres:postgres
