@@ -4,9 +4,9 @@ services:
     image: "beancodede/theredshirts-proxy:latest"
     build: ./nginx-data
     ports:
-    - "80:80"
+    - "1203:1203"
     environment:
-    - NGINX_PORT=80
+    - NGINX_PORT=1203
     depends_on:
       lobby:
         condition: service_started
@@ -42,6 +42,7 @@ services:
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
       - LOG_LEVEL=debug
+      - LOBBY_USER=00000000-0000-0000-0000-000000000000
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,6 +55,7 @@ services:
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
       - LOG_LEVEL=debug
+      - LOBBY_USER=00000000-0000-0000-0000-000000000000
     depends_on:
       postgres:
         condition: service_healthy
