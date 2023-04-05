@@ -41,7 +41,7 @@ services:
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=info
       - LOBBY_USER=00000000-0000-0000-0000-000000000000
     depends_on:
       postgres:
@@ -54,7 +54,7 @@ services:
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=info
       - LOBBY_USER=00000000-0000-0000-0000-000000000000
     depends_on:
       postgres:
