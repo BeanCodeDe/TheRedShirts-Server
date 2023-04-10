@@ -5,7 +5,7 @@ services:
     container_name: prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--log.level=warn'
+      - '--log.level=error'
     restart: unless-stopped
     volumes:
       - ./monitoring-data/prometheus-data:/etc/prometheus
@@ -24,7 +24,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=root
       - GF_SECURITY_ADMIN_PASSWORD=root
-      - GF_LOG_LEVEL=WARN
+      - GF_LOG_LEVEL=ERROR
     volumes:
       - ./monitoring-data/grafana-data:/etc/grafana/provisioning
     depends_on:
@@ -61,6 +61,8 @@ services:
   pgadmin:
     container_name: pgadmin4_container
     image: dpage/pgadmin4
+    command:
+      - '--loglevel warning'
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: root@root.de
@@ -73,7 +75,7 @@ services:
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=warn
       - LOBBY_USER=00000000-0000-0000-0000-000000000001
     depends_on:
       postgres:
@@ -86,7 +88,7 @@ services:
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=warn
       - LOBBY_USER=00000000-0000-0000-0000-000000000001
     depends_on:
       postgres:
