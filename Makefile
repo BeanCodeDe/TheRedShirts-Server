@@ -1,3 +1,6 @@
+init.token:
+	sh ./authi-data/generateKeyFile.sh
+
 start.server:
 	docker compose up --build --pull=always
 

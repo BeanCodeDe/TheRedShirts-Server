@@ -1,5 +1,37 @@
 version: '3.7'
 services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--log.level=warn'
+    restart: unless-stopped
+    volumes:
+      - ./monitoring-data/prometheus-data:/etc/prometheus
+      - prom_data:/prometheus
+    depends_on:
+      lobby:
+        condition: service_started
+    links:
+      - lobby:lobby
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=root
+      - GF_SECURITY_ADMIN_PASSWORD=root
+      - GF_LOG_LEVEL=WARN
+    volumes:
+      - ./monitoring-data/grafana-data:/etc/grafana/provisioning
+    depends_on:
+      prometheus:
+        condition: service_started
+    links:
+      - prometheus:prometheus
   proxy:
     image: "beancodede/theredshirts-proxy:latest"
     build: ./nginx-data
@@ -35,30 +67,34 @@ services:
       PGADMIN_DEFAULT_PASSWORD: root
     ports:
       - "5050:80"
-  lobby:
-    image: "beancodede/theredshirts-lobby:latest"
-    container_name: theredshirts-lobby
-    restart: always
-    environment: 
-      - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=info
-      - LOBBY_USER=00000000-0000-0000-0000-000000000000
-    depends_on:
-      postgres:
-        condition: service_healthy
-    links:
-      - postgres:postgres
   message:
     image: "beancodede/theredshirts-message:latest"
     container_name: theredshirts-message
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=info
-      - LOBBY_USER=00000000-0000-0000-0000-000000000000
+      - LOG_LEVEL=debug
+      - LOBBY_USER=00000000-0000-0000-0000-000000000001
     depends_on:
       postgres:
         condition: service_healthy
     links:
       - postgres:postgres
-
+  lobby:
+    image: "beancodede/theredshirts-lobby:latest"
+    container_name: theredshirts-lobby
+    restart: always
+    environment: 
+      - POSTGRES_PASSWORD=myDatabasePassword
+      - LOG_LEVEL=debug
+      - LOBBY_USER=00000000-0000-0000-0000-000000000001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      message:
+        condition: service_started
+    links:
+      - postgres:postgres
+      - message:message
+volumes:
+  prom_data:
