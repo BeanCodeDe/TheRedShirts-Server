@@ -1,40 +1,9 @@
 version: '3.7'
 services:
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--log.level=error'
-    restart: unless-stopped
-    volumes:
-      - ./monitoring-data/prometheus-data:/etc/prometheus
-      - prom_data:/prometheus
-    depends_on:
-      lobby:
-        condition: service_started
-    links:
-      - lobby:lobby
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - 3000:3000
-    restart: unless-stopped
-    environment:
-      - GF_SECURITY_ADMIN_USER=root
-      - GF_SECURITY_ADMIN_PASSWORD=root
-      - GF_LOG_LEVEL=ERROR
-    volumes:
-      - ./monitoring-data/grafana-data:/etc/grafana/provisioning
-    depends_on:
-      prometheus:
-        condition: service_started
-    links:
-      - prometheus:prometheus
   proxy:
     image: "beancodede/theredshirts-proxy:latest"
     build: ./nginx-data
+    container_name: infra-proxy
     ports:
     - "1203:1203"
     environment:
@@ -44,12 +13,15 @@ services:
         condition: service_started
       message:
         condition: service_started
+      authi:
+        condition: service_started
     links:
       - lobby:lobby
       - message:message
+      - authi:authi
   postgres:
     image: postgres:latest
-    container_name: postgres
+    container_name: infra-postgres
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
@@ -59,16 +31,31 @@ services:
       timeout: 5s
       retries: 5 
   pgadmin:
-    container_name: pgadmin4_container
+    container_name: monitoring-pgadmin4
     image: dpage/pgadmin4
     command:
-      - '--loglevel warning'
+      - --loglevel warning
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: root@root.de
       PGADMIN_DEFAULT_PASSWORD: root
     ports:
       - "5050:80"
+  authi:
+    image: "beancodede/authi:latest"
+    container_name: theredshirts-authi
+    restart: always
+    environment: 
+      - POSTGRES_PASSWORD=myDatabasePassword
+      - LOG_LEVEL=debug
+    volumes: 
+      - ./authi-data/token:/token
+      - ./authi-data/authi.conf:/authi.conf
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres:postgres
   message:
     image: "beancodede/theredshirts-message:latest"
     container_name: theredshirts-message
@@ -76,27 +63,45 @@ services:
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
       - LOG_LEVEL=warn
+      - JAEGER_SERVICE_NAME=theredshirts-message
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
       - LOBBY_USER=00000000-0000-0000-0000-000000000001
     depends_on:
       postgres:
         condition: service_healthy
+      authi:
+        condition: service_started
     links:
       - postgres:postgres
+      - authi:authi
   lobby:
     image: "beancodede/theredshirts-lobby:latest"
     container_name: theredshirts-lobby
     restart: always
     environment: 
       - POSTGRES_PASSWORD=myDatabasePassword
-      - LOG_LEVEL=warn
+      - LOG_LEVEL=debug
+      - JAEGER_SERVICE_NAME=theredshirts-lobby
+      - JAEGER_AGENT_HOST=jaeger
+      - JAEGER_AGENT_PORT=6831
       - LOBBY_USER=00000000-0000-0000-0000-000000000001
     depends_on:
       postgres:
         condition: service_healthy
       message:
         condition: service_started
+      authi:
+        condition: service_started
     links:
       - postgres:postgres
       - message:message
-volumes:
-  prom_data:
+      - authi:authi
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: monitoring-jeager
+    ports:
+      - "16686:16686"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=warn
